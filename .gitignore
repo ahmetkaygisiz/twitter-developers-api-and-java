@@ -1,3 +1,8 @@
+target/*
+#Properties
+src/main/resources/twitter4j.properties
+src/test/*
+
 # Compiled class file
 *.class
 
