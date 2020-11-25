@@ -1,4 +1,4 @@
-package service;
+package com.akua.service;
 
 import twitter4j.*;
 
@@ -21,28 +21,7 @@ public class UserService extends TwitterService{
         return twitter.showUser(username);
     }
 
-    public String createTweet(String tweet) throws TwitterException {
-        Status status = twitter.updateStatus(tweet);
-
-        return status.getText();
-    }
-
-    public Status getLastTweet() throws TwitterException {
-        return getUser().getStatus();
-    }
-
-    public void removeLastTweet() throws TwitterException {
-        twitter.destroyStatus(getLastTweet().getId());
-    }
-
-    public String DeMedenYuru(String recepient, String msg) throws TwitterException {
-        DirectMessage dm =  twitter.sendDirectMessage(recepient, msg);
-
-        return dm.getText();
-    }
-
     public Map<String, User> getFollowingUsers() throws TwitterException {
-
         Map<String, User> followingMap = new HashMap<>();
         IDs ids = twitter.getFriendsIDs(-1);
 
@@ -71,7 +50,7 @@ public class UserService extends TwitterService{
         return hayranlarimMap;
     }
 
-    public List<Status> getAllYourTweets() throws TwitterException {
+    public List<Status> getAllUserTweets() throws TwitterException {
         int pageNumber = 1;
 
         Paging page = new Paging (pageNumber, 100);
@@ -84,16 +63,16 @@ public class UserService extends TwitterService{
             if (userTimeline.size() == 0)
                 break;
             page.setPage(pageNumber++);
-        }while(true);
+
+        } while(true);
 
         return myStatuses;
     }
 
-    // duzenleyecegiz...
     public void exportTweetsToCSV(String folderPath) throws IOException, TwitterException {
         FileWriter writer = new FileWriter(folderPath + "/my-tweet-archive.csv");
 
-        List<Status> myTweets = getAllYourTweets();
+        List<Status> myTweets = getAllUserTweets();
 
         for (Status s : myTweets){
             writer.write(s.getText().replaceAll("\n"," "));
