@@ -1,4 +1,4 @@
-package service;
+package com.akua.service;
 
 import twitter4j.Paging;
 import twitter4j.ResponseList;
@@ -18,8 +18,8 @@ public class TimeLineService extends TwitterService{
 
         return timeline;
     }
-    public void printTimeLine() throws TwitterException {
-        ResponseList<Status> statusList = twitter.getHomeTimeline(new Paging(1,100));
+    public void printTimeLine(int page, int pageSize) throws TwitterException {
+        ResponseList<Status> statusList = twitter.getHomeTimeline(new Paging(page,pageSize));
 
         for (Status status: statusList){
             long userId = status.getUser().getId();
