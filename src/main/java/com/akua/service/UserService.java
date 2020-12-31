@@ -1,61 +1,47 @@
 package com.akua.service;
 
-import com.akua.api.JacksonService;
-import com.akua.api.GenericResponse;
-import com.akua.dto.UserDAO;
 import twitter4j.*;
 
+import java.io.FileWriter;
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class UserService extends TwitterService{
 
-    private JacksonService jacksonService;
+    private final String username;
 
-    public UserService(){
-        this.jacksonService = new JacksonService();
+    public UserService(String username){
+        this.username = username;
     }
 
-    public User getUser(String username) throws TwitterException {
+    public User getUser() throws TwitterException {
         return twitter.showUser(username);
     }
 
-    public Map<String, User> getFollowingUsers(String username) throws TwitterException {
+    public Map<String, User> getFollowingUsers() throws TwitterException {
         Map<String, User> followingMap = new HashMap<>();
-        IDs friendsIDs = twitter.getFriendsIDs(username, -1);
+        IDs ids = twitter.getFriendsIDs(-1);
 
         do {
-            for ( long id : friendsIDs.getIDs()){
-                followingMap.put(
-                        twitter.showUser(id).getName(),
-                        twitter.showUser(id));
-            }
-
-        } while (friendsIDs.hasNext());
+            for ( long id : ids.getIDs())
+                followingMap.put(twitter.showUser(id).getName(), twitter.showUser(id));
+        }while (ids.hasNext());
 
         return followingMap;
     }
 
-    public Map<String, UserDAO> getFollowersMap(String username) throws TwitterException {
-        Map<String, UserDAO> hayranlarimMap = new HashMap<>();
+    public Map<String, User> getFollowersMap() throws TwitterException {
+        Map<String, User> hayranlarimMap = new HashMap<>();
         long cursor = -1L;
 
         while(cursor != 0){
             PagableResponseList<User> followersList = twitter.getFollowersList(username, cursor);
 
             followersList.listIterator().forEachRemaining( i -> {
-                hayranlarimMap.put(i.getScreenName(), new UserDAO(
-                        i.getId(),
-                        i.getName(),
-                        i.getLocation(),
-                        i.getDescription(),
-                        i.getEmail(),
-                        i.getFollowersCount(),
-                        i.getFriendsCount()
-                ));
+                hayranlarimMap.put(i.getName(), i);
             });
 
             cursor = followersList.getNextCursor();
@@ -64,16 +50,7 @@ public class UserService extends TwitterService{
         return hayranlarimMap;
     }
 
-    public List getUserFavs(String username) throws TwitterException {
-        ResponseList<Status> favorites = twitter.getFavorites(username);
-        List<String> favList = new ArrayList<>();
-        favorites.forEach(i -> {
-            favList.add(i.getText());
-        });
-        return favList;
-    }
-
-    public GenericResponse<List<Status>> getUserTweets(String username) throws TwitterException {
+    public List<Status> getAllUserTweets() throws TwitterException {
         int pageNumber = 1;
 
         Paging page = new Paging (pageNumber, 100);
@@ -89,14 +66,20 @@ public class UserService extends TwitterService{
 
         } while(true);
 
-        return new GenericResponse<>(myStatuses);
+        return myStatuses;
     }
 
-    public void exportTweetsToJson(String username, String folderPath) throws IOException, TwitterException {
-        String outputPath = folderPath + "/" + username + "_" + new Date().toString() + ".json";
+    public void exportTweetsToCSV(String folderPath) throws IOException, TwitterException {
+        FileWriter writer = new FileWriter(folderPath + "/my-tweet-archive.csv");
 
-        Map<String, UserDAO> followersMap = getFollowersMap(username);
+        List<Status> myTweets = getAllUserTweets();
 
-        jacksonService.objectToJsonFile(followersMap, outputPath);
+        for (Status s : myTweets){
+            writer.write(s.getText().replaceAll("\n"," "));
+            writer.write(";");
+            writer.write("\n");
+        }
+
+        writer.close();
     }
 }
